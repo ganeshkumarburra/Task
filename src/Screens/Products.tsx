@@ -1,34 +1,103 @@
-import React, {useState} from 'react';
-import {StyleSheet, Text, View, FlatList, Modal} from 'react-native';
+import React, {useReducer, useState} from 'react';
+import {StyleSheet, Text, View, FlatList, Modal, Pressable} from 'react-native';
 import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
-import {RadioButton} from 'react-native-paper';
+import FontAwesome5Icon from 'react-native-vector-icons/FontAwesome5';
+import {Button, RadioButton} from 'react-native-paper';
+import CheckBox from '@react-native-community/checkbox';
 
 import data from '../../assets/Products/sampleData.json';
 import Product from '../components/Product';
 
+const temp = [
+  {id: 0, type: 'FREE SIZE', isChecked: false},
+  {id: 1, type: 'S', isChecked: false},
+  {id: 2, type: 'M', isChecked: false},
+  {id: 3, type: 'L', isChecked: false},
+  {id: 4, type: 'XL', isChecked: false},
+  {id: 5, type: 'XXL', isChecked: false},
+];
+const init: string[] = [];
 const Products = ({navigation}: any) => {
   const [modalVisible, setModalVisible] = useState(false);
+  const [showFilter, setShowFilter] = useState(false);
   const [checked, setChecked] = React.useState('first');
+  const [checkBoxData, setCheckBoxData] = useState(temp);
+  const [checkedData, setCheckedData] = useState<string[]>([]);
+  const handleChange = (id: number) => {
+    let temp = checkBoxData.map((item, index) => {
+      if (index === id) {
+        return {...item, isChecked: !item.isChecked};
+      }
+      return item;
+    });
+    setCheckBoxData(temp);
+  };
+
+  const handleApply = () => {
+    setShowFilter(false);
+    setCheckedData(temp => {
+      checkBoxData.map(item => {
+        temp = item.isChecked
+          ? [...temp, item.type]
+          : temp.filter(type => type !== item.type);
+      });
+      return [...new Set(temp)];
+    });
+  };
+
+  const filterFun = (item: any) => {
+    let found = false;
+    checkedData.map(val => {
+      if (item.AvailableSizes.includes(val)) [(found = true)];
+    });
+    return found;
+  };
+
   return (
     // <ScrollView>
     <View style={styles.container}>
       <View
-        style={{flexDirection: 'row', left: 0, top: 0, alignSelf: 'flex-end'}}>
-        <Text>Sort By</Text>
-        <MaterialIcons
-          name="sort"
-          color="black"
-          size={20}
-          onPress={() => setModalVisible(!modalVisible)}
-        />
+        style={{
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+        <Pressable onPress={() => setShowFilter(!showFilter)}>
+          <View
+            style={{
+              flexDirection: 'row',
+            }}>
+            <FontAwesome5Icon name={'filter'} style={{marginTop: 2}} />
+            <Text>Filter By</Text>
+          </View>
+        </Pressable>
+        <View
+          style={{
+            flexDirection: 'row',
+          }}>
+          <Text>Sort By</Text>
+          <MaterialIcons
+            name="sort"
+            color="black"
+            size={20}
+            onPress={() => setModalVisible(!modalVisible)}
+          />
+        </View>
       </View>
       <FlatList
         numColumns={3}
         data={
-          (checked === 'first' &&
-            data.sort((a, b) => (a.Price < b.Price ? 1 : -1))) ||
-          (checked === 'second' &&
-            data.sort((a, b) => (a.Price > b.Price ? 1 : -1)))
+          checked === 'first'
+            ? checkedData.length
+              ? data
+                  .filter(filterFun)
+                  .sort((a, b) => (a.Price < b.Price ? 1 : -1))
+              : data.sort((a, b) => (a.Price < b.Price ? 1 : -1))
+            : checkedData.length
+            ? data
+                .filter(filterFun)
+                .sort((a, b) => (a.Price > b.Price ? 1 : -1))
+            : data.sort((a, b) => (a.Price > b.Price ? 1 : -1))
         }
         renderItem={({item, index}) => (
           <Product
@@ -86,6 +155,63 @@ const Products = ({navigation}: any) => {
               />
               <Text>LOW TO HIGH</Text>
             </View>
+          </View>
+        </View>
+      </Modal>
+      <Modal
+        animationType="slide"
+        visible={showFilter}
+        transparent={true}
+        onRequestClose={() => setShowFilter(false)}>
+        <View
+          style={{
+            flex: 1,
+            height: '100%',
+            justifyContent: 'flex-end',
+            backgroundColor: '#00000099',
+            width: '100%',
+            // flexDirection: 'row',
+          }}>
+          <View
+            style={{
+              backgroundColor: '#FFF',
+              // marginBottom: 40,
+              // alignSelf: 'flex-start',
+              // paddingLeft: 10,
+              // paddingRight: 20,
+              position: 'absolute',
+              // right: 0,
+            }}>
+            {checkBoxData.map((item, index) => {
+              return (
+                <View
+                  style={{flexDirection: 'row', marginLeft: 25}}
+                  key={index}>
+                  <Text style={{width: '50%'}}>{item.type}</Text>
+                  <CheckBox
+                    key={item.id}
+                    disabled={false}
+                    value={item.isChecked}
+                    onChange={() => {
+                      console.log('clivked');
+                      handleChange(item.id);
+                    }}
+                  />
+                </View>
+              );
+            })}
+            <Button
+              onPress={handleApply}
+              children={'Apply'}
+              color="white"
+              style={{
+                height: 40,
+                backgroundColor: 'green',
+                width: 100,
+                alignSelf: 'center',
+                marginBottom: 10,
+              }}
+            />
           </View>
         </View>
       </Modal>
